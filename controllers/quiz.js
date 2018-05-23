@@ -205,14 +205,18 @@ exports.randomcheck = (req, res, next) => {
     }
 
     const resJugador = req.query.answer || "";
-    const resQuiz = req.query.answer;
+    const resQuiz = req.quiz.answer;
 
     var puntuacion = req.session.randomPlay.length;
-    var result = resJugador.toLowerCase().trim() === resQuiz.toLowerCase().trim();
+    var result = true;
 
-    if(result){
+    if(resJugador.toLowerCase().trim() === resQuiz.toLowerCase().trim()){
             req.session.randomPlay.push(req.quiz.id) 
             puntuacion = req.session.randomPlay.length;
+            result = true;
+    } else {
+        delete req.session.randomPlay; //si fallo dejo de jugar
+        result = false;
     }
 
     res.render('quizzes/random_result', {   
