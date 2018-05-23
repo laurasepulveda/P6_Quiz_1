@@ -225,3 +225,78 @@ exports.check = (req, res, next) => {
         answer
     });
 };
+
+//GET /quizzes/randomplay
+exports.randomplay = (req, res, next) => {
+    if(req.session.randomPlay == undefined) {
+        req.session.randomPlay = [];
+    }
+
+    const Op = Sequelize.Op;
+    const condicion = {'id' : {[Op.notIn]: req.session.randomPlay}};
+
+    models.quiz.count({where: condicion})
+        .then(function (count){
+            return models.quiz.findAll({
+                where: condicion,
+                offset: Math.floor(Math.random() * count),
+                limit: 1
+            })
+
+                .then(function(quizzes){
+                    return quizzes[0];
+                });
+
+        })
+        .then(function(quiz) {
+            const puntuacion = req.session.randomPlay.length;
+
+            if(quiz) {
+                res.render('quizzes/random_play', {
+                    quiz: quiz,
+                    score: req.session.randomPlay.length
+                    });
+                req.session.randomPlay = [];
+            } else {
+                delete req.session.randomPlay;
+                res.render('quizzes/random_nomore', {
+                    score: puntuacion
+                });
+                
+            }
+            
+        })
+        .catch(error => next(error));
+};
+
+//GET /quizzes/randomcheck
+
+exports.randomcheck = (req, res, next) => {
+    if(req.session.randomPlay == undefined) {
+        req.session.randomPlay = [];
+    }
+
+    const resJugador = req.query.answer || "";
+    const resQuiz = req.quiz.answer;
+
+    var puntuacion = req.session.randomPlay.length;
+    var result = true;
+
+    if(resJugador.toLowerCase().trim() === resQuiz.toLowerCase().trim()){
+            req.session.randomPlay.push(req.quiz.id) 
+            puntuacion = req.session.randomPlay.length;
+            result = true;
+    } else {
+        delete req.session.randomPlay; //si fallo dejo de jugar
+        result = false;
+    }
+
+    res.render('quizzes/random_result', {   
+        score: puntuacion, 
+        answer: resJugador,
+        result: result
+    });
+
+
+
+};
